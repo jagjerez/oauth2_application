@@ -1,6 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, verifyToken } from '@/lib/auth';
 
+/**
+ * @swagger
+ * /api/auth/session:
+ *   get:
+ *     summary: Get current user session
+ *     description: Returns the current authenticated user's session data including roles, permissions, and app metadata
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Session data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SessionData'
+ *                 - type: object
+ *                   properties:
+ *                     appMetadata:
+ *                       type: object
+ *                       description: Custom user metadata from JWT token
+ *                       additionalProperties: true
+ *                       example:
+ *                         department: "Engineering"
+ *                         level: "Senior"
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET(request: NextRequest) {
   try {
     // Try to get session from cookies first

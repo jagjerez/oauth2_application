@@ -11,6 +11,7 @@ interface User {
   lastName: string;
   isActive: boolean;
   roles: string[];
+  appMetadata?: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -99,10 +100,6 @@ export default function AdminPage() {
     }
   }, [activeTab]);
 
-  useEffect(() => {
-    checkAuthAndFetchData();
-  }, [activeTab, fetchData]);
-
   const checkAuthAndFetchData = async () => {
     try {
       const token = localStorage.getItem('access_token');
@@ -136,6 +133,12 @@ export default function AdminPage() {
       window.location.href = '/login?returnTo=/admin';
     }
   };
+
+  useEffect(() => {
+    checkAuthAndFetchData();
+  }, [activeTab, fetchData]);
+
+  
 
   const handleDelete = async (id: string, type: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
@@ -176,6 +179,7 @@ export default function AdminPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metadata</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -191,6 +195,29 @@ export default function AdminPage() {
                   }`}>
                     {user.isActive ? 'Active' : 'Inactive'}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.appMetadata && Object.keys(user.appMetadata).length > 0 ? (
+                    <div className="max-w-xs">
+                      <div className="text-xs text-gray-600 mb-1">
+                        {Object.keys(user.appMetadata).length} metadata field(s)
+                      </div>
+                      <div className="space-y-1">
+                        {Object.entries(user.appMetadata).slice(0, 2).map(([key, value]) => (
+                          <div key={key} className="text-xs">
+                            <span className="font-medium text-gray-700">{key}:</span> {String(value)}
+                          </div>
+                        ))}
+                        {Object.keys(user.appMetadata).length > 2 && (
+                          <div className="text-xs text-gray-500">
+                            +{Object.keys(user.appMetadata).length - 2} more...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 text-xs">No metadata</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   {!isReadOnly && (
