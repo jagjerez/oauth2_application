@@ -20,7 +20,13 @@ export default function LoginPage() {
       .then(res => res.json())
       .then(data => setCsrfToken(data.token))
       .catch(err => console.error('Failed to get CSRF token:', err));
-  }, []);
+
+    // Check for error messages in URL
+    const error = searchParams.get('error');
+    if (error === 'insufficient_permissions') {
+      setError('You do not have sufficient permissions to access this page');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,8 +46,30 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        const returnTo = searchParams.get('returnTo') || '/consent';
-        router.push(returnTo);
+        // Store tokens in localStorage for API calls
+        if (data.accessToken) {
+          localStorage.setItem('access_token', data.accessToken);
+        }
+        if (data.refreshToken) {
+          localStorage.setItem('refresh_token', data.refreshToken);
+        }
+        
+        const returnTo = searchParams.get('returnTo');
+        
+        if (returnTo) {
+          window.location.href = returnTo;
+        } else {
+          // Check if user has admin access
+          const userData = data.user;
+          const isAdmin = userData.roles.includes('administrator') || userData.roles.includes('admin');
+          const hasAdminPermission = userData.permissions.includes('admin:read') || userData.permissions.includes('admin:write');
+          
+          if (isAdmin || hasAdminPermission) {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = '/consent';
+          }
+        }
       } else {
         setError(data.error || 'Login failed');
       }

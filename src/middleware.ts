@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Security headers
@@ -38,6 +38,13 @@ export function middleware(request: NextRequest) {
     return new Response(null, { status: 200, headers: response.headers });
   }
 
+  // Skip authentication checks for API routes
+  if (pathname.startsWith('/api/')) {
+    return response;
+  }
+
+  // For now, let the pages handle their own authentication
+  // This is a temporary solution while we debug the session issue
   return response;
 }
 

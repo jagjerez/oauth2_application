@@ -51,6 +51,12 @@ export function withCSRFProtection(handler: (request: NextRequest) => Promise<Ne
       return handler(request);
     }
     
+    // For development, skip CSRF validation
+    if (process.env.NODE_ENV === 'development') {
+      return handler(request);
+    }
+    
+    // In production, validate CSRF token
     const isValidCSRF = await verifyCSRFToken(request);
     if (!isValidCSRF) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });

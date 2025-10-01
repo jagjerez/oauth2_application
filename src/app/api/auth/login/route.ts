@@ -3,7 +3,7 @@ import connectDB from '@/lib/db';
 import User from '@/models/User';
 import Role from '@/models/Role';
 import Permission from '@/models/Permission';
-import { verifyPassword, createSession } from '@/lib/auth';
+import { verifyPassword, generateAccessToken, generateRefreshToken } from '@/lib/auth';
 import { withCSRFProtection } from '@/lib/csrf';
 
 async function handleLogin(request: NextRequest) {
@@ -42,10 +42,20 @@ async function handleLogin(request: NextRequest) {
     user.lastLogin = new Date();
     await user.save();
 
-    // Create session
-    await createSession(user, roles, permissions);
+    // Generate tokens
+    const accessToken = generateAccessToken({
+      sub: user._id.toString(),
+      username: user.username,
+      email: user.email,
+      roles: roles.map(role => role.name),
+      permissions: permissions.map(permission => permission.name),
+      appMetadata: user.appMetadata,
+    });
 
-    return NextResponse.json({ 
+    const refreshToken = generateRefreshToken(user._id.toString());
+
+    // Create response with tokens
+    const response = NextResponse.json({ 
       message: 'Login successful',
       user: {
         id: user._id,
@@ -55,8 +65,29 @@ async function handleLogin(request: NextRequest) {
         lastName: user.lastName,
         roles: roles.map(role => role.name),
         permissions: permissions.map(permission => permission.name),
-      }
+      },
+      accessToken,
+      refreshToken
     });
+
+    // Set cookies using NextResponse methods
+    response.cookies.set('access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60, // 1 hour
+      path: '/',
+    });
+
+    response.cookies.set('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Login error:', error);
