@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import { getSession, hasPermission } from '@/lib/auth';
@@ -69,6 +70,10 @@ export async function GET(
     }
 
     await connectDB();
+    
+    // Ensure Role model is registered before populating
+    const RoleModel = mongoose.models.Role || (await import('@/models/Role')).default;
+    
     const user = await User.findById(params.id).populate('roles').select('-password');
     
     if (!user) {
@@ -242,6 +247,9 @@ export async function PUT(
       delete userData.password;
     }
 
+    // Ensure Role model is registered before populating
+    const RoleModel = mongoose.models.Role || (await import('@/models/Role')).default;
+    
     const updatedUser = await User.findByIdAndUpdate(
       params.id,
       userData,

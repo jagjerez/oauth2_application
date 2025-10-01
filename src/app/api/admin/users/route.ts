@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/lib/db';
-import User from '@/models/User';
 import Role from '@/models/Role';
+import User from '@/models/User';
 import { getSession, hasPermission } from '@/lib/auth';
 
 /**
@@ -55,6 +56,10 @@ export async function GET(request: NextRequest) {
     }
 
     await connectDB();
+    
+    // Ensure Role model is registered before populating
+    const RoleModel = mongoose.models.Role || (await import('@/models/Role')).default;
+    
     const users = await User.find({}).populate('roles').select('-password');
     
     return NextResponse.json(users);

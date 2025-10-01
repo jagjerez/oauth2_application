@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import AdminNavigation from '@/components/AdminNavigation';
 
 interface User {
   _id: string;
@@ -50,57 +51,75 @@ interface SessionData {
   permissions: string[];
 }
 
-export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'permissions' | 'clients'>('users');
+export default function AdminDashboard() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [, setSession] = useState<SessionData | null>(null);
+  const [session, setSession] = useState<SessionData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isReadOnly, setIsReadOnly] = useState(false);
-  const router = useRouter();
-
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const token = localStorage.getItem('access_token');
       const headers: HeadersInit = {};
       
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      
-      const response = await fetch(`/api/admin/${activeTab}`, { headers });
-      if (response.ok) {
-        const data = await response.json();
-        switch (activeTab) {
-          case 'users':
-            setUsers(data);
-            break;
-          case 'roles':
-            setRoles(data);
-            break;
-          case 'permissions':
-            setPermissions(data);
-            break;
-          case 'clients':
-            setClients(data);
-            break;
-        }
-      } else {
-        setError('Failed to fetch data');
+
+      const [usersRes, rolesRes, permissionsRes, clientsRes] = await Promise.all([
+        fetch('/api/admin/users', { headers }),
+        fetch('/api/admin/roles', { headers }),
+        fetch('/api/admin/permissions', { headers }),
+        fetch('/api/admin/clients', { headers }),
+      ]);
+
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        // Remove duplicates based on _id
+        const uniqueUsers = usersData.filter((user: User, index: number, self: User[]) => 
+          index === self.findIndex(u => u._id === user._id)
+        );
+        setUsers(uniqueUsers);
       }
-    } catch {
-      setError('An error occurred while fetching data');
+      if (rolesRes.ok) {
+        const rolesData = await rolesRes.json();
+        // Remove duplicates based on _id
+        const uniqueRoles = rolesData.filter((role: Role, index: number, self: Role[]) => 
+          index === self.findIndex(r => r._id === role._id)
+        );
+        setRoles(uniqueRoles);
+      }
+      if (permissionsRes.ok) {
+        const permissionsData = await permissionsRes.json();
+        // Remove duplicates based on _id
+        const uniquePermissions = permissionsData.filter((permission: Permission, index: number, self: Permission[]) => 
+          index === self.findIndex(p => p._id === permission._id)
+        );
+        setPermissions(uniquePermissions);
+      }
+      if (clientsRes.ok) {
+        const clientsData = await clientsRes.json();
+        // Remove duplicates based on _id
+        const uniqueClients = clientsData.filter((client: Client, index: number, self: Client[]) => 
+          index === self.findIndex(c => c._id === client._id)
+        );
+        setClients(uniqueClients);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to fetch data');
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, []);
 
-  const checkAuthAndFetchData = async () => {
+  const checkAuthAndFetchData = useCallback(async () => {
     try {
       const token = localStorage.getItem('access_token');
       const headers: HeadersInit = {};
@@ -132,314 +151,26 @@ export default function AdminPage() {
       console.error('Auth check failed:', error);
       window.location.href = '/login?returnTo=/admin';
     }
-  };
+  }, [fetchData]);
 
   useEffect(() => {
     checkAuthAndFetchData();
-  }, [activeTab, fetchData]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  
-
-  const handleDelete = async (id: string, type: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
-
-    try {
-      const response = await fetch(`/api/admin/${type}/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        fetchData();
-      } else {
-        setError('Failed to delete item');
-      }
-    } catch {
-      setError('An error occurred while deleting item');
-    }
-  };
-
-  const renderUsers = () => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Users</h2>
-        {!isReadOnly && (
-          <button
-            onClick={() => router.push('/admin/users/new')}
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
-            Add User
-          </button>
-        )}
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metadata</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user) => (
-              <tr key={user._id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.username}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.firstName} {user.lastName}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {user.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {user.appMetadata && Object.keys(user.appMetadata).length > 0 ? (
-                    <div className="max-w-xs">
-                      <div className="text-xs text-gray-600 mb-1">
-                        {Object.keys(user.appMetadata).length} metadata field(s)
-                      </div>
-                      <div className="space-y-1">
-                        {Object.entries(user.appMetadata).slice(0, 2).map(([key, value]) => (
-                          <div key={key} className="text-xs">
-                            <span className="font-medium text-gray-700">{key}:</span> {String(value)}
-                          </div>
-                        ))}
-                        {Object.keys(user.appMetadata).length > 2 && (
-                          <div className="text-xs text-gray-500">
-                            +{Object.keys(user.appMetadata).length - 2} more...
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-gray-400 text-xs">No metadata</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  {!isReadOnly && (
-                    <>
-                      <button
-                        onClick={() => router.push(`/admin/users/${user._id}/edit`)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(user._id, 'users')}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                  {isReadOnly && (
-                    <span className="text-gray-400 text-sm">Read Only</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const renderRoles = () => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Roles</h2>
-        {!isReadOnly && (
-          <button
-            onClick={() => router.push('/admin/roles/new')}
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
-            Add Role
-          </button>
-        )}
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {roles.map((role) => (
-              <tr key={role._id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{role.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{role.description}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    role.isSystem ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {role.isSystem ? 'System' : 'Custom'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  {!isReadOnly && (
-                    <>
-                      <button
-                        onClick={() => router.push(`/admin/roles/${role._id}/edit`)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                      >
-                        Edit
-                      </button>
-                      {!role.isSystem && (
-                        <button
-                          onClick={() => handleDelete(role._id, 'roles')}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </>
-                  )}
-                  {isReadOnly && (
-                    <span className="text-gray-400 text-sm">Read Only</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const renderPermissions = () => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Permissions</h2>
-        {!isReadOnly && (
-          <button
-            onClick={() => router.push('/admin/permissions/new')}
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
-            Add Permission
-          </button>
-        )}
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {permissions.map((permission) => (
-              <tr key={permission._id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{permission.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{permission.resource}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{permission.action}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  {!isReadOnly && (
-                    <>
-                      <button
-                        onClick={() => router.push(`/admin/permissions/${permission._id}/edit`)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(permission._id, 'permissions')}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                  {isReadOnly && (
-                    <span className="text-gray-400 text-sm">Read Only</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const renderClients = () => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Clients</h2>
-        {!isReadOnly && (
-          <button
-            onClick={() => router.push('/admin/clients/new')}
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
-            Add Client
-          </button>
-        )}
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grant Types</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {clients.map((client) => (
-              <tr key={client._id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.clientId}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.grantTypes.join(', ')}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    client.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {client.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  {!isReadOnly && (
-                    <>
-                      <button
-                        onClick={() => router.push(`/admin/clients/${client._id}/edit`)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(client._id, 'clients')}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                  {isReadOnly && (
-                    <span className="text-gray-400 text-sm">Read Only</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AdminNavigation />
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Read-only mode indicator */}
@@ -463,49 +194,226 @@ export default function AdminPage() {
             </div>
           )}
 
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              {[
-                { id: 'users', name: 'Users' },
-                { id: 'roles', name: 'Roles' },
-                { id: 'permissions', name: 'Permissions' },
-                { id: 'clients', name: 'Clients' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as 'users' | 'roles' | 'permissions' | 'clients')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  {tab.name}
-                </button>
-              ))}
-            </nav>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="mt-2 text-gray-600">Overview of your OAuth2 application management system</p>
           </div>
 
-          <div className="mt-6">
-            {error && (
-              <div className="rounded-md bg-red-50 p-4 mb-4">
-                <div className="text-sm text-red-700">{error}</div>
-              </div>
-            )}
+          {error && (
+            <div className="rounded-md bg-red-50 p-4 mb-6">
+              <div className="text-sm text-red-700">{error}</div>
+            </div>
+          )}
 
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Loading...</p>
+          {/* Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Users Card */}
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
+                      <dd className="text-lg font-medium text-gray-900">{users.length}</dd>
+                    </dl>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-600">Active: {users.filter(u => u.isActive).length}</span>
+                    <span className="text-red-600">Inactive: {users.filter(u => !u.isActive).length}</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => router.push('/admin/users')}
+                    className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Manage Users
+                  </button>
+                </div>
               </div>
-            ) : (
-              <>
-                {activeTab === 'users' && renderUsers()}
-                {activeTab === 'roles' && renderRoles()}
-                {activeTab === 'permissions' && renderPermissions()}
-                {activeTab === 'clients' && renderClients()}
-              </>
-            )}
+            </div>
+
+            {/* Roles Card */}
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Total Roles</dt>
+                      <dd className="text-lg font-medium text-gray-900">{roles.length}</dd>
+                    </dl>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-blue-600">System: {roles.filter(r => r.isSystem).length}</span>
+                    <span className="text-gray-600">Custom: {roles.filter(r => !r.isSystem).length}</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => router.push('/admin/roles')}
+                    className="w-full bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Manage Roles
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Permissions Card */}
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Total Permissions</dt>
+                      <dd className="text-lg font-medium text-gray-900">{permissions.length}</dd>
+                    </dl>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <div className="text-sm text-gray-600">
+                    <span>Resources: {new Set(permissions.map(p => p.resource)).size}</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => router.push('/admin/permissions')}
+                    className="w-full bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Manage Permissions
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Clients Card */}
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">OAuth2 Clients</dt>
+                      <dd className="text-lg font-medium text-gray-900">{clients.length}</dd>
+                    </dl>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-600">Active: {clients.filter(c => c.isActive).length}</span>
+                    <span className="text-red-600">Inactive: {clients.filter(c => !c.isActive).length}</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => router.push('/admin/clients')}
+                    className="w-full bg-orange-50 hover:bg-orange-100 text-orange-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Manage Clients
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {!isReadOnly && (
+                  <>
+                    <button
+                      onClick={() => router.push('/admin/users/new')}
+                      className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Add User
+                    </button>
+                    <button
+                      onClick={() => router.push('/admin/roles')}
+                      className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Create Role
+                    </button>
+                    <button
+                      onClick={() => router.push('/admin/permissions')}
+                      className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Create Permission
+                    </button>
+                    <button
+                      onClick={() => router.push('/admin/clients')}
+                      className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Create Client
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => router.push('/admin/settings')}
+                  className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Settings
+                </button>
+                <button
+                  onClick={() => router.push('/api-docs')}
+                  className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  API Documentation
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

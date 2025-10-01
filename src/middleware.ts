@@ -43,6 +43,23 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // Handle admin panel access with OAuth flow
+  if (pathname.startsWith('/admin') && pathname !== '/admin/settings') {
+    // Check if user is already authenticated via cookies
+    const accessToken = request.cookies.get('access_token')?.value;
+    
+    if (!accessToken) {
+      // Redirect to login with admin client parameters
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('client_id', 'admin-panel');
+      loginUrl.searchParams.set('redirect_uri', request.url);
+      loginUrl.searchParams.set('response_type', 'code');
+      loginUrl.searchParams.set('scope', 'openid profile email admin');
+      
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   // For now, let the pages handle their own authentication
   // This is a temporary solution while we debug the session issue
   return response;

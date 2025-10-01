@@ -12,11 +12,15 @@ const PermissionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const RoleSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true, trim: true },
+  name: { type: String, required: true, trim: true },
   description: { type: String, required: true, trim: true },
   permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Permission' }],
+  clientId: { type: String, trim: true, index: true },
   isSystem: { type: Boolean, default: false },
 }, { timestamps: true });
+
+// Create compound index for unique name per client
+RoleSchema.index({ name: 1, clientId: 1 }, { unique: true });
 
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, trim: true, lowercase: true },
@@ -77,11 +81,12 @@ async function seedDatabase() {
     const createdPermissions = await Permission.insertMany(permissions);
     console.log('✅ Created permissions');
 
-    // Create roles
+    // Create roles associated with admin client
     const adminRole = new Role({
       name: 'admin',
       description: 'Administrator role with full access',
       permissions: createdPermissions.map(p => p._id),
+      clientId: 'admin-panel',
       isSystem: true,
     });
     await adminRole.save();
@@ -90,6 +95,7 @@ async function seedDatabase() {
       name: 'user',
       description: 'Regular user role',
       permissions: createdPermissions.filter(p => p.name.includes('read')).map(p => p._id),
+      clientId: 'admin-panel',
       isSystem: true,
     });
     await userRole.save();
@@ -123,27 +129,30 @@ async function seedDatabase() {
 
     console.log('✅ Created users');
 
-    // Create test client
-    const testClient = new Client({
-      clientId: 'test-client',
-      clientSecret: 'test-secret',
-      name: 'Test Application',
-      description: 'A test OAuth2 client application',
-      redirectUris: ['http://localhost:3001/callback'],
+    // Create admin client
+    const adminClient = new Client({
+      clientId: 'admin-panel',
+      clientSecret: 'admin-secret-2024',
+      name: 'Admin Panel',
+      description: 'OAuth2 Admin Panel Application',
+      redirectUris: ['http://localhost:3000/admin', 'http://localhost:3000/login'],
       grantTypes: ['authorization_code', 'client_credentials', 'refresh_token'],
       responseTypes: ['code'],
-      scopes: ['openid', 'profile', 'email', 'roles', 'permissions'],
+      scopes: ['openid', 'profile', 'email', 'roles', 'permissions', 'admin'],
       isConfidential: true,
       isActive: true,
       tokenEndpointAuthMethod: 'client_secret_basic',
     });
-    await testClient.save();
+    await adminClient.save();
 
-    console.log('✅ Created test client');
+    console.log('✅ Created admin client');
     console.log('\n🎉 Database seeded successfully!');
     console.log('\nTest credentials:');
     console.log('Admin: admin / admin123');
     console.log('User: testuser / admin123');
+    console.log('\nAdmin client:');
+    console.log('Client ID: admin-panel');
+    console.log('Client Secret: admin-secret-2024');
     console.log('\nTest client:');
     console.log('Client ID: test-client');
     console.log('Client Secret: test-secret');

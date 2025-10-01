@@ -34,13 +34,22 @@ export default function LoginPage() {
     setError('');
 
     try {
+      const clientId = searchParams.get('client_id');
+      const redirectUri = searchParams.get('redirect_uri');
+      const state = searchParams.get('state');
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          clientId,
+          redirectUri,
+          state,
+        }),
       });
 
       const data = await response.json();
@@ -58,6 +67,16 @@ export default function LoginPage() {
         
         if (returnTo) {
           window.location.href = returnTo;
+        } else if (data.redirectUri) {
+          // Redirect to the client's redirect URI
+          const redirectUrl = new URL(data.redirectUri);
+          if (data.code) {
+            redirectUrl.searchParams.set('code', data.code);
+          }
+          if (state) {
+            redirectUrl.searchParams.set('state', state);
+          }
+          window.location.href = redirectUrl.toString();
         } else {
           // Check if user has admin access
           const userData = data.user;

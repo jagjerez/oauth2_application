@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import Role from '@/models/Role';
 import Permission from '@/models/Permission';
+import Client from '@/models/Client';
 import { verifyPassword, generateAccessToken, generateRefreshToken } from '@/lib/auth';
 import { withCSRFProtection } from '@/lib/csrf';
 
@@ -10,13 +12,16 @@ async function handleLogin(request: NextRequest) {
   try {
     await connectDB();
 
-    const { username, password } = await request.json();
+    const { username, password, clientId, redirectUri, state } = await request.json();
 
     if (!username || !password) {
       return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
     }
 
     // Find user by username or email
+    // Ensure Role model is registered before populating
+    const RoleModel = mongoose.models.Role || (await import('@/models/Role')).default;
+    
     const user = await User.findOne({
       $or: [{ username }, { email: username }],
       isActive: true,
@@ -33,6 +38,9 @@ async function handleLogin(request: NextRequest) {
     }
 
     // Get user roles and permissions
+    // Ensure Permission model is registered before populating
+    const PermissionModel = mongoose.models.Permission || (await import('@/models/Permission')).default;
+    
     const roles = await Role.find({ _id: { $in: user.roles } }).populate('permissions');
     const permissions = await Permission.find({
       _id: { $in: roles.flatMap(role => role.permissions) }
@@ -41,6 +49,28 @@ async function handleLogin(request: NextRequest) {
     // Update last login
     user.lastLogin = new Date();
     await user.save();
+
+    // Validate client if provided
+    let client = null;
+    let authorizationCode = null;
+    
+    if (clientId) {
+      client = await Client.findOne({ clientId, isActive: true });
+      if (!client) {
+        return NextResponse.json({ error: 'Invalid client' }, { status: 400 });
+      }
+      
+      // Validate redirect URI
+      if (redirectUri && !client.redirectUris.includes(redirectUri)) {
+        return NextResponse.json({ error: 'Invalid redirect URI' }, { status: 400 });
+      }
+      
+      // Generate authorization code for OAuth flow
+      if (redirectUri) {
+        authorizationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        // In a real implementation, you would store this code with expiration
+      }
+    }
 
     // Generate tokens
     const accessToken = generateAccessToken({
@@ -55,7 +85,7 @@ async function handleLogin(request: NextRequest) {
     const refreshToken = generateRefreshToken(user._id.toString());
 
     // Create response with tokens
-    const response = NextResponse.json({ 
+    const responseData: any = { 
       message: 'Login successful',
       user: {
         id: user._id,
@@ -68,7 +98,17 @@ async function handleLogin(request: NextRequest) {
       },
       accessToken,
       refreshToken
-    });
+    };
+
+    // Add OAuth-specific data if client is provided
+    if (client && redirectUri) {
+      responseData.redirectUri = redirectUri;
+      if (authorizationCode) {
+        responseData.code = authorizationCode;
+      }
+    }
+
+    const response = NextResponse.json(responseData);
 
     // Set cookies using NextResponse methods
     response.cookies.set('access_token', accessToken, {

@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import connectDB from '@/lib/db';
 import Role from '@/models/Role';
-import Permission from '@/models/Permission';
 import { getSession, hasPermission } from '@/lib/auth';
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const session = await getSession();
     
@@ -17,59 +19,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
+    const { id } = params;
+    
     await connectDB();
     
     // Ensure Permission model is registered before populating
     const PermissionModel = mongoose.models.Permission || (await import('@/models/Permission')).default;
     
-    const roles = await Role.find({}).populate('permissions');
+    const role = await Role.findById(id).populate('permissions');
     
-    return NextResponse.json(roles);
+    if (!role) {
+      return NextResponse.json({ error: 'Role not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json(role);
 
   } catch (error) {
-    console.error('Roles fetch error:', error);
+    console.error('Role fetch error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getSession();
-    
-    if (!session) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    if (!hasPermission(session.permissions, 'roles:create')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
-    }
-
-    const roleData = await request.json();
-    
-    await connectDB();
-    
-    // Check if role already exists for the same client
-    const existingRole = await Role.findOne({ 
-      name: roleData.name, 
-      clientId: roleData.clientId || null 
-    });
-
-    if (existingRole) {
-      return NextResponse.json({ error: 'Role already exists for this client' }, { status: 400 });
-    }
-
-    const role = new Role(roleData);
-    await role.save();
-
-    return NextResponse.json({ message: 'Role created successfully', role });
-
-  } catch (error) {
-    console.error('Role creation error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
-
-export async function PUT(request: NextRequest) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const session = await getSession();
     
@@ -81,11 +55,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    const { id, ...roleData } = await request.json();
-    
-    if (!id) {
-      return NextResponse.json({ error: 'Role ID is required' }, { status: 400 });
-    }
+    const { id } = params;
+    const roleData = await request.json();
     
     await connectDB();
     
@@ -99,15 +70,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot modify system roles' }, { status: 400 });
     }
 
-    // Check if name is being changed and if new name already exists for the same client
+    // Check if name is being changed and if new name already exists
     if (roleData.name && roleData.name !== existingRole.name) {
-      const nameExists = await Role.findOne({ 
-        name: roleData.name, 
-        clientId: roleData.clientId || null,
-        _id: { $ne: id } 
-      });
+      const nameExists = await Role.findOne({ name: roleData.name, _id: { $ne: id } });
       if (nameExists) {
-        return NextResponse.json({ error: 'Role name already exists for this client' }, { status: 400 });
+        return NextResponse.json({ error: 'Role name already exists' }, { status: 400 });
       }
     }
 
@@ -128,7 +95,10 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const session = await getSession();
     
@@ -140,12 +110,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    
-    if (!id) {
-      return NextResponse.json({ error: 'Role ID is required' }, { status: 400 });
-    }
+    const { id } = params;
     
     await connectDB();
     
