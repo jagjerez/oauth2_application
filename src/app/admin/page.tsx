@@ -1,0 +1,378 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  roles: string[];
+  createdAt: string;
+}
+
+interface Role {
+  _id: string;
+  name: string;
+  description: string;
+  permissions: string[];
+  isSystem: boolean;
+}
+
+interface Permission {
+  _id: string;
+  name: string;
+  description: string;
+  resource: string;
+  action: string;
+}
+
+interface Client {
+  _id: string;
+  clientId: string;
+  name: string;
+  description?: string;
+  redirectUris: string[];
+  grantTypes: string[];
+  scopes: string[];
+  isActive: boolean;
+}
+
+export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'permissions' | 'clients'>('users');
+  const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchData();
+  }, [activeTab]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/admin/${activeTab}`);
+      if (response.ok) {
+        const data = await response.json();
+        switch (activeTab) {
+          case 'users':
+            setUsers(data);
+            break;
+          case 'roles':
+            setRoles(data);
+            break;
+          case 'permissions':
+            setPermissions(data);
+            break;
+          case 'clients':
+            setClients(data);
+            break;
+        }
+      } else {
+        setError('Failed to fetch data');
+      }
+    } catch (err) {
+      setError('An error occurred while fetching data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string, type: string) => {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/${type}/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        fetchData();
+      } else {
+        setError('Failed to delete item');
+      }
+    } catch (err) {
+      setError('An error occurred while deleting item');
+    }
+  };
+
+  const renderUsers = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Users</h2>
+        <button
+          onClick={() => router.push('/admin/users/new')}
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          Add User
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {users.map((user) => (
+              <tr key={user._id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.username}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.firstName} {user.lastName}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {user.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => router.push(`/admin/users/${user._id}/edit`)}
+                    className="text-indigo-600 hover:text-indigo-900 mr-3"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(user._id, 'users')}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderRoles = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Roles</h2>
+        <button
+          onClick={() => router.push('/admin/roles/new')}
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          Add Role
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {roles.map((role) => (
+              <tr key={role._id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{role.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{role.description}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    role.isSystem ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {role.isSystem ? 'System' : 'Custom'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => router.push(`/admin/roles/${role._id}/edit`)}
+                    className="text-indigo-600 hover:text-indigo-900 mr-3"
+                  >
+                    Edit
+                  </button>
+                  {!role.isSystem && (
+                    <button
+                      onClick={() => handleDelete(role._id, 'roles')}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderPermissions = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Permissions</h2>
+        <button
+          onClick={() => router.push('/admin/permissions/new')}
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          Add Permission
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {permissions.map((permission) => (
+              <tr key={permission._id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{permission.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{permission.resource}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{permission.action}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => router.push(`/admin/permissions/${permission._id}/edit`)}
+                    className="text-indigo-600 hover:text-indigo-900 mr-3"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(permission._id, 'permissions')}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderClients = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Clients</h2>
+        <button
+          onClick={() => router.push('/admin/clients/new')}
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          Add Client
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grant Types</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {clients.map((client) => (
+              <tr key={client._id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.clientId}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.grantTypes.join(', ')}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    client.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {client.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => router.push(`/admin/clients/${client._id}/edit`)}
+                    className="text-indigo-600 hover:text-indigo-900 mr-3"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(client._id, 'clients')}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              {[
+                { id: 'users', name: 'Users' },
+                { id: 'roles', name: 'Roles' },
+                { id: 'permissions', name: 'Permissions' },
+                { id: 'clients', name: 'Clients' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === tab.id
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  {tab.name}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <div className="mt-6">
+            {error && (
+              <div className="rounded-md bg-red-50 p-4 mb-4">
+                <div className="text-sm text-red-700">{error}</div>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading...</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === 'users' && renderUsers()}
+                {activeTab === 'roles' && renderRoles()}
+                {activeTab === 'permissions' && renderPermissions()}
+                {activeTab === 'clients' && renderClients()}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
