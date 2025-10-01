@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+function LoginContent() {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -169,5 +169,23 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              Loading...
+            </h2>
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

@@ -28,7 +28,7 @@ export const oidcConfig: Configuration = {
   },
   interactions: {
     url(ctx: unknown, interaction: unknown) {
-      return `/consent?${(ctx as any).querystring}`;
+      return `/consent?${(ctx as { querystring: string }).querystring}`;
     },
   },
   cookies: {
@@ -52,10 +52,10 @@ export const oidcConfig: Configuration = {
       },
     ],
   },
-  clientBasedCORS(ctx, origin, client) {
+  clientBasedCORS(ctx: unknown, origin: unknown, client: unknown) {
     return true;
   },
-  async findById(ctx, id) {
+  async findById(ctx: unknown, id: string) {
     await connectDB();
     const user = await User.findById(id).populate('roles');
     if (!user || !user.isActive) return undefined;
@@ -83,7 +83,7 @@ export const oidcConfig: Configuration = {
       },
     };
   },
-  async findAccount(ctx, id, token) {
+  async findAccount(ctx: unknown, id: string, token: unknown) {
     await connectDB();
     const user = await User.findById(id).populate('roles');
     if (!user || !user.isActive) return undefined;
@@ -111,7 +111,7 @@ export const oidcConfig: Configuration = {
       },
     };
   },
-  async findClientById(ctx, id) {
+  async findClientById(ctx: unknown, id: string) {
     await connectDB();
     const client = await Client.findOne({ clientId: id, isActive: true });
     if (!client) return undefined;
@@ -126,18 +126,18 @@ export const oidcConfig: Configuration = {
       clientAuthMethods: [client.tokenEndpointAuthMethod],
     };
   },
-  async saveInteraction(ctx, interaction) {
+  async saveInteraction(ctx: unknown, interaction: unknown) {
     // Store interaction in session or database
     return interaction;
   },
-  async findInteraction(ctx, jti) {
+  async findInteraction(ctx: unknown, jti: string) {
     // Retrieve interaction from session or database
     return undefined;
   },
-  async consumeInteraction(ctx, jti) {
+  async consumeInteraction(ctx: unknown, jti: string) {
     // Mark interaction as consumed
   },
-  async destroyInteraction(ctx, jti) {
+  async destroyInteraction(ctx: unknown, jti: string) {
     // Remove interaction from storage
   },
 };

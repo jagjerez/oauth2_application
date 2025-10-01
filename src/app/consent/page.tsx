@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface ConsentData {
@@ -14,7 +14,7 @@ interface ConsentData {
   nonce?: string;
 }
 
-export default function ConsentPage() {
+function ConsentContent() {
   const [consentData, setConsentData] = useState<ConsentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -165,5 +165,23 @@ export default function ConsentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ConsentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              Loading...
+            </h2>
+          </div>
+        </div>
+      </div>
+    }>
+      <ConsentContent />
+    </Suspense>
   );
 }

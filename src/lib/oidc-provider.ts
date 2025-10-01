@@ -1,4 +1,4 @@
-import Provider from 'oidc-provider';
+import { Provider } from 'oidc-provider';
 import { oidcConfig } from './oidc-config';
 
 let provider: Provider | null = null;
