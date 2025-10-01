@@ -50,7 +50,7 @@ export default function UsersPage() {
     password: '',
     roles: [] as string[],
     isActive: true,
-    appMetadata: {} as Record<string, any>,
+    appMetadata: {} as Record<string, unknown>,
   });
 
   useEffect(() => {
@@ -141,7 +141,7 @@ export default function UsersPage() {
       password: '', // Don't pre-fill password
       roles: user.roles.map(r => r._id),
       isActive: user.isActive,
-      appMetadata: user.appMetadata || {},
+        appMetadata: user.appMetadata || {} as Record<string, unknown>,
     });
     setShowModal(true);
   };
@@ -432,13 +432,13 @@ export default function UsersPage() {
                         <input
                           type="text"
                           value={key}
-                          onChange={(e) => updateMetadataField(key, e.target.value, value)}
+                          onChange={(e) => updateMetadataField(key, e.target.value, String(value))}
                           placeholder="Key"
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <input
                           type="text"
-                          value={value}
+                          value={String(value)}
                           onChange={(e) => updateMetadataField(key, key, e.target.value)}
                           placeholder="Value"
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

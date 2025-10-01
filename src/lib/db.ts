@@ -18,6 +18,10 @@ if (!cached) {
 }
 
 async function connectDB() {
+  if (!cached) {
+    throw new Error('Mongoose cache not initialized');
+  }
+  
   if (cached.conn) {
     return cached.conn;
   }
@@ -45,6 +49,9 @@ async function connectDB() {
 export default connectDB;
 
 declare global {
-  var mongoose: any;
+  var mongoose: {
+    conn: typeof import('mongoose') | null;
+    promise: Promise<typeof import('mongoose')> | null;
+  } | undefined;
 }
 

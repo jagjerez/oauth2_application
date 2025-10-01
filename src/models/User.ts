@@ -10,7 +10,7 @@ export interface IUser extends Document {
   roles: mongoose.Types.ObjectId[];
   isActive: boolean;
   lastLogin?: Date;
-  appMetadata?: Record<string, any>;
+  appMetadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }

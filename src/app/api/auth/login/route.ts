@@ -85,7 +85,7 @@ async function handleLogin(request: NextRequest) {
     const refreshToken = generateRefreshToken(user._id.toString());
 
     // Create response with tokens
-    const responseData: any = { 
+    const responseData: Record<string, unknown> = { 
       message: 'Login successful',
       user: {
         id: user._id,

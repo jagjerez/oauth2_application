@@ -11,7 +11,7 @@ interface User {
   lastName: string;
   roles: string[];
   isActive: boolean;
-  appMetadata: Record<string, any>;
+  appMetadata: Record<string, unknown>;
 }
 
 interface Role {
@@ -24,12 +24,12 @@ export default function EditUserPage() {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    password: '',
+    password: '' as string | undefined,
     firstName: '',
     lastName: '',
     roles: [] as string[],
     isActive: true,
-    appMetadata: {} as Record<string, any>,
+    appMetadata: {} as Record<string, unknown>,
   });
   const [metadataKey, setMetadataKey] = useState('');
   const [metadataValue, setMetadataValue] = useState('');
@@ -69,7 +69,7 @@ export default function EditUserPage() {
           lastName: userData.lastName,
           roles: userData.roles || [],
           isActive: userData.isActive,
-          appMetadata: userData.appMetadata || {},
+          appMetadata: userData.appMetadata || {} as Record<string, unknown>,
         });
       } else {
         setError('Failed to fetch user data');

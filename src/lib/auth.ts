@@ -16,7 +16,7 @@ export interface JWTPayload {
   email: string;
   roles: string[];
   permissions: string[];
-  appMetadata?: Record<string, any>;
+  appMetadata?: Record<string, unknown>;
   iat?: number;
   exp?: number;
 }
@@ -27,7 +27,7 @@ export interface SessionData {
   email: string;
   roles: string[];
   permissions: string[];
-  appMetadata?: Record<string, any>;
+  appMetadata?: Record<string, unknown>;
 }
 
 // Password hashing
@@ -45,14 +45,14 @@ export function generateAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): s
   return jwt.sign(payload, JWT_SECRET, { 
     expiresIn: JWT_EXPIRES_IN,
     algorithm: 'HS256'
-  });
+  } as jwt.SignOptions);
 }
 
 export function generateRefreshToken(userId: string): string {
   return jwt.sign({ sub: userId, type: 'refresh' }, JWT_SECRET, { 
     expiresIn: REFRESH_TOKEN_EXPIRES_IN,
     algorithm: 'HS256'
-  });
+  } as jwt.SignOptions);
 }
 
 export function verifyToken(token: string): JWTPayload | null {
@@ -66,7 +66,7 @@ export function verifyToken(token: string): JWTPayload | null {
 // Session management
 export async function createSession(user: IUser, roles: IRole[], permissions: IPermission[]): Promise<SessionData> {
   const sessionData: SessionData = {
-    userId: user._id.toString(),
+    userId: (user._id as unknown as string).toString(),
     username: user.username,
     email: user.email,
     roles: roles.map(role => role.name),
@@ -77,7 +77,7 @@ export async function createSession(user: IUser, roles: IRole[], permissions: IP
   // Set secure HTTP-only cookies
   const cookieStore = await cookies();
   const accessToken = generateAccessToken({
-    sub: user._id.toString(),
+    sub: (user._id as unknown as string).toString(),
     username: user.username,
     email: user.email,
     roles: sessionData.roles,
@@ -85,7 +85,7 @@ export async function createSession(user: IUser, roles: IRole[], permissions: IP
     appMetadata: user.appMetadata,
   });
 
-  const refreshToken = generateRefreshToken(user._id.toString());
+  const refreshToken = generateRefreshToken((user._id as unknown as string).toString());
 
   cookieStore.set('access_token', accessToken, {
     httpOnly: true,

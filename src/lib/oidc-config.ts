@@ -27,8 +27,8 @@ export const oidcConfig: Configuration = {
     permissions: ['permissions'],
   },
   interactions: {
-    url(ctx, interaction) {
-      return `/consent?${ctx.querystring}`;
+    url(ctx: unknown, interaction: unknown) {
+      return `/consent?${(ctx as any).querystring}`;
     },
   },
   cookies: {

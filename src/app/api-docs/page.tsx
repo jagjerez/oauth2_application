@@ -168,7 +168,7 @@ export default function ApiDocsPage() {
                       </div>
                     </div>
                     <p className="mt-2 text-sm text-gray-600">
-                      Update a user's information including roles and metadata
+                      Update a user&apos;s information including roles and metadata
                     </p>
                     <div className="mt-2">
                       <span className="text-xs text-gray-500">Authentication: Bearer Token or Cookie | Permission: users:update</span>

@@ -40,7 +40,7 @@ export default function RolesPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    clientId: '',
+    clientId: '' as string | null,
     permissions: [] as string[],
   });
 
@@ -309,8 +309,8 @@ export default function RolesPage() {
                     Client (Optional)
                   </label>
                   <select
-                    value={formData.clientId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value }))}
+                    value={formData.clientId || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value || null }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">No client (Global role)</option>

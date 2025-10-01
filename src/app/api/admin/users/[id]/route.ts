@@ -56,7 +56,7 @@ import { getSession, hasPermission } from '@/lib/auth';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -69,12 +69,14 @@ export async function GET(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
+    const { id } = await params;
+    
     await connectDB();
     
     // Ensure Role model is registered before populating
     const RoleModel = mongoose.models.Role || (await import('@/models/Role')).default;
     
-    const user = await User.findById(params.id).populate('roles').select('-password');
+    const user = await User.findById(id).populate('roles').select('-password');
     
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -198,7 +200,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -211,12 +213,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
+    const { id } = await params;
     const userData = await request.json();
     
     await connectDB();
     
     // Check if user exists
-    const existingUser = await User.findById(params.id);
+    const existingUser = await User.findById(id);
     if (!existingUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -225,7 +228,7 @@ export async function PUT(
     if (userData.username && userData.username !== existingUser.username) {
       const usernameConflict = await User.findOne({ 
         username: userData.username,
-        _id: { $ne: params.id }
+        _id: { $ne: id }
       });
       if (usernameConflict) {
         return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
@@ -235,7 +238,7 @@ export async function PUT(
     if (userData.email && userData.email !== existingUser.email) {
       const emailConflict = await User.findOne({ 
         email: userData.email,
-        _id: { $ne: params.id }
+        _id: { $ne: id }
       });
       if (emailConflict) {
         return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
@@ -251,7 +254,7 @@ export async function PUT(
     const RoleModel = mongoose.models.Role || (await import('@/models/Role')).default;
     
     const updatedUser = await User.findByIdAndUpdate(
-      params.id,
+      id,
       userData,
       { new: true, runValidators: true }
     ).populate('roles').select('-password');
@@ -316,7 +319,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -329,14 +332,16 @@ export async function DELETE(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
+    const { id } = await params;
+    
     await connectDB();
     
-    const user = await User.findById(params.id);
+    const user = await User.findById(id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    await User.findByIdAndDelete(params.id);
+    await User.findByIdAndDelete(id);
 
     return NextResponse.json({ message: 'User deleted successfully' });
 

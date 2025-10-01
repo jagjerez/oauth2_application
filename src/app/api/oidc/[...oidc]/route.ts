@@ -3,12 +3,13 @@ import { createOIDCProvider } from '@/lib/oidc-provider';
 
 const provider = createOIDCProvider();
 
-export async function GET(request: NextRequest, { params }: { params: { oidc: string[] } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ oidc: string[] }> }) {
   const url = new URL(request.url);
-  const path = params.oidc.join('/');
+  const { oidc } = await params;
+  const path = oidc.join('/');
   
   try {
-    const response = await provider.callback()(request as any);
+    const response = await provider.callback()(request as unknown);
     return new NextResponse(response.body, {
       status: response.status,
       headers: response.headers,
@@ -19,12 +20,13 @@ export async function GET(request: NextRequest, { params }: { params: { oidc: st
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { oidc: string[] } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ oidc: string[] }> }) {
   const url = new URL(request.url);
-  const path = params.oidc.join('/');
+  const { oidc } = await params;
+  const path = oidc.join('/');
   
   try {
-    const response = await provider.callback()(request as any);
+    const response = await provider.callback()(request as unknown);
     return new NextResponse(response.body, {
       status: response.status,
       headers: response.headers,
@@ -35,12 +37,13 @@ export async function POST(request: NextRequest, { params }: { params: { oidc: s
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { oidc: string[] } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ oidc: string[] }> }) {
   const url = new URL(request.url);
-  const path = params.oidc.join('/');
+  const { oidc } = await params;
+  const path = oidc.join('/');
   
   try {
-    const response = await provider.callback()(request as any);
+    const response = await provider.callback()(request as unknown);
     return new NextResponse(response.body, {
       status: response.status,
       headers: response.headers,
@@ -51,12 +54,13 @@ export async function PUT(request: NextRequest, { params }: { params: { oidc: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { oidc: string[] } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ oidc: string[] }> }) {
   const url = new URL(request.url);
-  const path = params.oidc.join('/');
+  const { oidc } = await params;
+  const path = oidc.join('/');
   
   try {
-    const response = await provider.callback()(request as any);
+    const response = await provider.callback()(request as unknown);
     return new NextResponse(response.body, {
       status: response.status,
       headers: response.headers,
