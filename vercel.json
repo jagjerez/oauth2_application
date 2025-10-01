@@ -3,19 +3,5 @@
     "src/app/api/oidc/[...oidc]/route.ts": {
       "maxDuration": 30
     }
-  },
-  "env": {
-    "MONGODB_URI": "@mongodb-uri",
-    "JWT_SECRET": "@jwt-secret",
-    "JWT_PUBLIC_KEY_N": "@jwt-public-key-n",
-    "JWT_PUBLIC_KEY_E": "@jwt-public-key-e",
-    "JWT_PRIVATE_KEY_D": "@jwt-private-key-d",
-    "JWT_PRIVATE_KEY_P": "@jwt-private-key-p",
-    "JWT_PRIVATE_KEY_Q": "@jwt-private-key-q",
-    "JWT_PRIVATE_KEY_DP": "@jwt-private-key-dp",
-    "JWT_PRIVATE_KEY_DQ": "@jwt-private-key-dq",
-    "JWT_PRIVATE_KEY_QI": "@jwt-private-key-qi",
-    "OIDC_ISSUER": "@oidc-issuer",
-    "COOKIE_KEYS": "@cookie-keys"
   }
 }
