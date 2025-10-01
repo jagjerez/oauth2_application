@@ -5,6 +5,112 @@ import Role from '@/models/Role';
 import Permission from '@/models/Permission';
 import { getSession, hasPermission } from '@/lib/auth';
 
+/**
+ * @swagger
+ * /api/admin/roles:
+ *   get:
+ *     summary: Get all roles
+ *     description: Retrieve a list of all roles with their permissions
+ *     tags: [Admin - Roles]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of roles retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Role'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   post:
+ *     summary: Create a new role
+ *     description: Create a new role with specified permissions
+ *     tags: [Admin - Roles]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - description
+ *               - permissions
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Role name
+ *                 example: content_manager
+ *               description:
+ *                 type: string
+ *                 description: Role description
+ *                 example: Manages content and media
+ *               permissions:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of permission IDs
+ *                 example: [507f1f77bcf86cd799439011, 507f1f77bcf86cd799439012]
+ *               clientId:
+ *                 type: string
+ *                 description: Associated client ID (optional)
+ *                 example: my-app-client
+ *     responses:
+ *       201:
+ *         description: Role created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Role'
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();

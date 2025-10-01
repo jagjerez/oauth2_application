@@ -4,6 +4,129 @@ import Client from '@/models/Client';
 import { getSession, hasPermission } from '@/lib/auth';
 import { randomBytes } from 'crypto';
 
+/**
+ * @swagger
+ * /api/admin/clients:
+ *   get:
+ *     summary: Get all OAuth2 clients
+ *     description: Retrieve a list of all OAuth2 clients
+ *     tags: [Admin - Clients]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of clients retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Client'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   post:
+ *     summary: Create a new OAuth2 client
+ *     description: Create a new OAuth2 client with generated credentials
+ *     tags: [Admin - Clients]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - redirectUris
+ *               - grantTypes
+ *               - scopes
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Client application name
+ *                 example: My Application
+ *               description:
+ *                 type: string
+ *                 description: Client description
+ *                 example: Main application client
+ *               redirectUris:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Allowed redirect URIs
+ *                 example: [http://localhost:3000/callback, https://myapp.com/callback]
+ *               grantTypes:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [authorization_code, client_credentials, refresh_token]
+ *                 description: OAuth2 grant types
+ *                 example: [authorization_code, refresh_token]
+ *               scopes:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: OAuth2 scopes
+ *                 example: [openid, profile, email, roles, permissions]
+ *     responses:
+ *       201:
+ *         description: Client created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Client'
+ *                 - type: object
+ *                   properties:
+ *                     clientSecret:
+ *                       type: string
+ *                       description: Generated client secret (only shown once)
+ *                       example: generated-secret-key-12345
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();

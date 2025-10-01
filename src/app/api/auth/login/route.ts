@@ -8,6 +8,86 @@ import Client from '@/models/Client';
 import { verifyPassword, generateAccessToken, generateRefreshToken } from '@/lib/auth';
 import { withCSRFProtection } from '@/lib/csrf';
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: User login
+ *     description: Authenticate user with username/email and password
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 description: Username or email
+ *                 example: johndoe
+ *               password:
+ *                 type: string
+ *                 description: User password
+ *                 example: password123
+ *               clientId:
+ *                 type: string
+ *                 description: OAuth2 client ID (optional)
+ *                 example: my-app-client
+ *               redirectUri:
+ *                 type: string
+ *                 description: OAuth2 redirect URI (optional)
+ *                 example: http://localhost:3000/callback
+ *               state:
+ *                 type: string
+ *                 description: OAuth2 state parameter (optional)
+ *                 example: random-state-string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Login successful
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 accessToken:
+ *                   type: string
+ *                   description: JWT access token
+ *                 refreshToken:
+ *                   type: string
+ *                   description: JWT refresh token
+ *                 expiresIn:
+ *                   type: number
+ *                   description: Token expiration time in seconds
+ *                   example: 3600
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 async function handleLogin(request: NextRequest) {
   try {
     await connectDB();

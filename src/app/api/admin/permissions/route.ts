@@ -3,6 +3,111 @@ import connectDB from '@/lib/db';
 import Permission from '@/models/Permission';
 import { getSession, hasPermission } from '@/lib/auth';
 
+/**
+ * @swagger
+ * /api/admin/permissions:
+ *   get:
+ *     summary: Get all permissions
+ *     description: Retrieve a list of all permissions
+ *     tags: [Admin - Permissions]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of permissions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Permission'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   post:
+ *     summary: Create a new permission
+ *     description: Create a new permission
+ *     tags: [Admin - Permissions]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - description
+ *               - resource
+ *               - action
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Permission name
+ *                 example: users:create
+ *               description:
+ *                 type: string
+ *                 description: Permission description
+ *                 example: Create new users
+ *               resource:
+ *                 type: string
+ *                 description: Resource this permission applies to
+ *                 example: users
+ *               action:
+ *                 type: string
+ *                 description: Action this permission allows
+ *                 example: create
+ *     responses:
+ *       201:
+ *         description: Permission created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Permission'
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
