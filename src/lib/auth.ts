@@ -6,7 +6,7 @@ import { IUser } from '@/models/User';
 import { IRole } from '@/models/Role';
 import { IPermission } from '@/models/Permission';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
 
@@ -59,6 +59,7 @@ export function verifyToken(token: string): JWTPayload | null {
   try {
     return jwt.verify(token, JWT_SECRET) as JWTPayload;
   } catch (error) {
+    console.error('Token verification failed:', error);
     return null;
   }
 }

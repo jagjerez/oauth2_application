@@ -35,5 +35,10 @@ const PermissionSchema = new Schema<IPermission>({
   timestamps: true,
 });
 
-export default mongoose.models.Permission || mongoose.model<IPermission>('Permission', PermissionSchema);
+// Register model if it doesn't exist
+if (mongoose.models.Permission) {
+  delete mongoose.models.Permission;
+}
+
+export default mongoose.model<IPermission>('Permission', PermissionSchema);
 

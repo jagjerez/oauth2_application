@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { SessionData } from '@/lib/auth';
 
 function LoginContent() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ function LoginContent() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [csrfToken, setCsrfToken] = useState('');
+  const [session, setSession] = useState<SessionData | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -78,15 +80,13 @@ function LoginContent() {
           }
           window.location.href = redirectUrl.toString();
         } else {
-          // Check if user has admin access
-          const userData = data.user;
-          const isAdmin = userData.roles.includes('administrator') || userData.roles.includes('admin');
-          const hasAdminPermission = userData.permissions.includes('admin:read') || userData.permissions.includes('admin:write');
-          
-          if (isAdmin || hasAdminPermission) {
-            window.location.href = '/admin';
+          // Check if there's a returnTo parameter for redirect after login
+          const returnTo = searchParams.get('returnTo');
+          if (returnTo) {
+            window.location.href = returnTo;
           } else {
-            window.location.href = '/consent';
+            // Always redirect to applications selection page after login
+            window.location.href = '/applications';
           }
         }
       } else {

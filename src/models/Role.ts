@@ -42,5 +42,10 @@ const RoleSchema = new Schema<IRole>({
 // Create compound index for unique name per client
 RoleSchema.index({ name: 1, clientId: 1 }, { unique: true });
 
-export default mongoose.models.Role || mongoose.model<IRole>('Role', RoleSchema);
+// Register model if it doesn't exist
+if (mongoose.models.Role) {
+  delete mongoose.models.Role;
+}
+
+export default mongoose.model<IRole>('Role', RoleSchema);
 

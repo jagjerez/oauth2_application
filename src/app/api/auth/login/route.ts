@@ -154,7 +154,7 @@ async function handleLogin(request: NextRequest) {
 
     // Generate tokens
     const accessToken = generateAccessToken({
-      sub: user._id.toString(),
+      sub: String(user._id),
       username: user.username,
       email: user.email,
       roles: roles.map(role => role.name),
@@ -162,13 +162,13 @@ async function handleLogin(request: NextRequest) {
       appMetadata: user.appMetadata,
     });
 
-    const refreshToken = generateRefreshToken(user._id.toString());
+    const refreshToken = generateRefreshToken(String(user._id));
 
     // Create response with tokens
     const responseData: Record<string, unknown> = { 
       message: 'Login successful',
       user: {
-        id: user._id,
+        id: String(user._id),
         username: user.username,
         email: user.email,
         firstName: user.firstName,

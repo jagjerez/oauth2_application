@@ -5,6 +5,7 @@ export interface IClient extends Document {
   clientSecret: string;
   name: string;
   description?: string;
+  logo?: string;
   redirectUris: string[];
   grantTypes: string[];
   responseTypes: string[];
@@ -34,6 +35,10 @@ const ClientSchema = new Schema<IClient>({
     trim: true,
   },
   description: {
+    type: String,
+    trim: true,
+  },
+  logo: {
     type: String,
     trim: true,
   },
@@ -76,5 +81,10 @@ const ClientSchema = new Schema<IClient>({
 ClientSchema.index({ clientId: 1 });
 ClientSchema.index({ isActive: 1 });
 
-export default mongoose.models.Client || mongoose.model<IClient>('Client', ClientSchema);
+// Register model if it doesn't exist
+if (mongoose.models.Client) {
+  delete mongoose.models.Client;
+}
+
+export default mongoose.model<IClient>('Client', ClientSchema);
 

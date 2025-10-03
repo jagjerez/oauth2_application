@@ -1,5 +1,4 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { IRole } from './Role';
 
 export interface IUser extends Document {
   username: string;
@@ -67,5 +66,10 @@ const UserSchema = new Schema<IUser>({
 // Index for efficient queries
 UserSchema.index({ isActive: 1 });
 
-export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+// Register model if it doesn't exist
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
+
+export default mongoose.model<IUser>('User', UserSchema);
 
