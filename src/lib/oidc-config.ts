@@ -1,7 +1,8 @@
 import { Configuration } from 'oidc-provider';
+import mongoose from 'mongoose';
 import connectDB from './db';
 import Client from '@/models/Client';
-import User from '@/models/User';
+import User, { IUser } from '@/models/User';
 import Role from '@/models/Role';
 import Permission from '@/models/Permission';
 
@@ -57,7 +58,7 @@ export const oidcConfig: Configuration = {
   },
   async findById(ctx: unknown, id: string) {
     await connectDB();
-    const user = await User.findById(id).populate('roles');
+    const user = await User.findById(id).populate('roles') as IUser | null;
     if (!user || !user.isActive) return undefined;
 
     const roles = await Role.find({ _id: { $in: user.roles } }).populate('permissions');
@@ -66,10 +67,10 @@ export const oidcConfig: Configuration = {
     });
 
     return {
-      accountId: user._id.toString(),
+      accountId: (user._id as mongoose.Types.ObjectId).toString(),
       claims() {
         return {
-          sub: user._id.toString(),
+          sub: (user._id as mongoose.Types.ObjectId).toString(),
           name: `${user.firstName} ${user.lastName}`,
           given_name: user.firstName,
           family_name: user.lastName,
@@ -85,7 +86,7 @@ export const oidcConfig: Configuration = {
   },
   async findAccount(ctx: unknown, id: string, token: unknown) {
     await connectDB();
-    const user = await User.findById(id).populate('roles');
+    const user = await User.findById(id).populate('roles') as IUser | null;
     if (!user || !user.isActive) return undefined;
 
     const roles = await Role.find({ _id: { $in: user.roles } }).populate('permissions');
@@ -94,10 +95,10 @@ export const oidcConfig: Configuration = {
     });
 
     return {
-      accountId: user._id.toString(),
+      accountId: (user._id as mongoose.Types.ObjectId).toString(),
       claims() {
         return {
-          sub: user._id.toString(),
+          sub: (user._id as mongoose.Types.ObjectId).toString(),
           name: `${user.firstName} ${user.lastName}`,
           given_name: user.firstName,
           family_name: user.lastName,

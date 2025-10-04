@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useSession, useRequireAuth } from '@/hooks/useAuth';
@@ -13,7 +13,7 @@ interface Application {
   redirectUris: string[];
 }
 
-export default function ApplicationsPage() {
+function ApplicationsContent() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -217,5 +217,13 @@ export default function ApplicationsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ApplicationsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ApplicationsContent />
+    </Suspense>
   );
 }
